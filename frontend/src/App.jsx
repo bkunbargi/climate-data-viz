@@ -3,6 +3,7 @@ import Filters from './components/Filters';
 import ChartContainer from './components/ChartContainer';
 import TrendAnalysis from './components/TrendAnalysis';
 import QualityIndicator from './components/QualityIndicator';
+import { getLocations, getMetrics, getClimateData, getClimateSummary, getTrends } from './api';
 
 function App() {
   const [locations, setLocations] = useState([]);
@@ -18,38 +19,55 @@ function App() {
     analysisType: 'raw'
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Existing useEffect for locations and metrics
+  // Load initial data on component mount
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const [locationsRes, metricsRes] = await Promise.all([
+          getLocations(),
+          getMetrics()
+        ]);
+        
+        setLocations(locationsRes.data || []);
+        setMetrics(metricsRes.data || []);
+        
+        const initialData = await getClimateData({ perPage: 50 });
+        setClimateData(initialData.data || []);
+      } catch (err) {
+        console.error('Failed to load initial data:', err);
+        setError('Failed to load data. Make sure the backend server is running.');
+      }
+    };
 
-  // Updated fetch function to handle different analysis types
+    loadInitialData();
+  }, []);
+
+  // Fetch data based on current filters
   const fetchData = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
-      const queryParams = new URLSearchParams({
-        ...(filters.locationId && { location_id: filters.locationId }),
-        ...(filters.startDate && { start_date: filters.startDate }),
-        ...(filters.endDate && { end_date: filters.endDate }),
-        ...(filters.metric && { metric: filters.metric }),
-        ...(filters.qualityThreshold && { quality_threshold: filters.qualityThreshold })
-      });
-
-      let endpoint = '/api/v1/climate';
-      if (filters.analysisType === 'trends') {
-        endpoint = '/api/v1/trends';
-      } else if (filters.analysisType === 'weighted') {
-        endpoint = '/api/v1/summary';
-      }
-
-      const response = await fetch(`${endpoint}?${queryParams}`);
-      const data = await response.json();
+      let data;
       
       if (filters.analysisType === 'trends') {
+        data = await getTrends(filters);
         setTrendData(data.data);
-      } else {
+        setClimateData([]);
+      } else if (filters.analysisType === 'summary') {
+        data = await getClimateSummary(filters);
         setClimateData(data.data);
+        setTrendData(null);
+      } else {
+        data = await getClimateData({ ...filters, perPage: 50 });
+        setClimateData(data.data || []);
+        setTrendData(null);
       }
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Failed to fetch data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -66,6 +84,12 @@ function App() {
         </p>
       </header>
 
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+
       <Filters 
         locations={locations}
         metrics={metrics}
@@ -76,21 +100,23 @@ function App() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         {filters.analysisType === 'trends' ? (
-          <TrendAnalysis 
-            data={trendData}
-            loading={loading}
-          />
+          <div className="lg:col-span-2">
+            <TrendAnalysis 
+              data={trendData}
+              loading={loading}
+            />
+          </div>
         ) : (
           <>
             <ChartContainer 
-              title="Climate Trends"
+              title="Climate Data"
               loading={loading}
               chartType="line"
               data={climateData}
               showQuality={true}
             />
             <ChartContainer 
-              title="Quality Distribution"
+              title="Data Overview"
               loading={loading}
               chartType="bar"
               data={climateData}

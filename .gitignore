@@ -1,0 +1,4 @@
+backend/.env
+backend/instance
+backend/migrations
+frontend/node_modules

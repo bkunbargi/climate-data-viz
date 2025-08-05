@@ -69,16 +69,27 @@ function TrendAnalysis({ data, loading }) {
             analysis.anomalies.length > 0 && (
               <div key={metric} className="border-b pb-2">
                 <h4 className="font-medium text-gray-700 mb-2 capitalize">{metric}</h4>
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {analysis.anomalies.map((anomaly, index) => (
-                    <div key={index} className="flex items-center text-sm">
-                      <span className="w-32">{anomaly.date}</span>
-                      <span className="w-24">{anomaly.value}</span>
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        anomaly.deviation > 3 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {anomaly.deviation.toFixed(1)} σ
-                      </span>
+                    <div key={index} className="p-3 border-l-4 border-eco-accent bg-eco-light rounded-r">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <span className="font-medium text-gray-800">{anomaly.date}</span>
+                          <span className="text-lg font-semibold text-gray-900">{anomaly.value}</span>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            anomaly.deviation > 3 ? 'bg-red-100 text-red-800' : 'bg-eco-accent/20 text-eco-dark'
+                          }`}>
+                            {anomaly.deviation}σ
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-gray-700">{anomaly.location}</div>
+                          <div className="text-xs text-gray-500">
+                            {anomaly.coordinates.latitude.toFixed(2)}°, {anomaly.coordinates.longitude.toFixed(2)}°
+                          </div>
+                          <div className="text-xs text-gray-500 capitalize">Quality: {anomaly.quality}</div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -96,7 +107,7 @@ function TrendAnalysis({ data, loading }) {
             analysis.seasonality.detected && (
               <div key={metric} className="border-b pb-4">
                 <h4 className="font-medium text-gray-700 mb-2 capitalize">{metric}</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
                     <p className="text-sm text-gray-600">
                       Period: {analysis.seasonality.period}
@@ -104,19 +115,19 @@ function TrendAnalysis({ data, loading }) {
                     <p className="text-sm text-gray-600">
                       Confidence: {(analysis.seasonality.confidence * 100).toFixed(1)}%
                     </p>
-                  </div>
-                  <div className="space-y-1">
-                    {Object.entries(analysis.seasonality.pattern).map(([season, data]) => (
-                      <div key={season} className="flex justify-between text-sm">
-                        <span className="capitalize">{season}</span>
-                        <span>{data.avg.toFixed(1)} ({data.trend})</span>
-                      </div>
-                    ))}
+                    <p className="text-sm text-gray-500 italic">
+                      Pattern analysis available with more data points
+                    </p>
                   </div>
                 </div>
               </div>
             )
           ))}
+          {Object.values(data).every(analysis => !analysis.seasonality.detected) && (
+            <p className="text-gray-500 text-center py-4">
+              No seasonal patterns detected. Try expanding your date range for better analysis.
+            </p>
+          )}
         </div>
       </div>
     </div>

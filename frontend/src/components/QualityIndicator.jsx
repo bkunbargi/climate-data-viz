@@ -38,19 +38,19 @@ function QualityIndicator({ data, className = '' }) {
           label="Excellent" 
           percentage={qualityStats.percentages.excellent}
           count={qualityStats.excellent}
-          color="bg-green-500"
+          color="bg-eco-secondary"
         />
         <QualityBar 
           label="Good" 
           percentage={qualityStats.percentages.good}
           count={qualityStats.good}
-          color="bg-blue-500"
+          color="bg-eco-primary"
         />
         <QualityBar 
           label="Questionable" 
           percentage={qualityStats.percentages.questionable}
           count={qualityStats.questionable}
-          color="bg-yellow-500"
+          color="bg-eco-accent"
         />
         <QualityBar 
           label="Poor" 

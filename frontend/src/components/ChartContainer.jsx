@@ -52,7 +52,10 @@ function ChartContainer({ title, loading, chartType, data, showQuality = false }
     );
   }
 
-  if (!data || data.length === 0) {
+  // Handle different data formats (raw climate data vs summary data)
+  const isSummaryData = data && typeof data === 'object' && !Array.isArray(data);
+  
+  if (!data || (Array.isArray(data) && data.length === 0) || (isSummaryData && Object.keys(data).length === 0)) {
     return (
       <div className="bg-white p-4 rounded-lg shadow-md h-96">
         <h2 className="text-xl font-semibold text-eco-primary mb-4">{title}</h2>
@@ -63,7 +66,75 @@ function ChartContainer({ title, loading, chartType, data, showQuality = false }
     );
   }
 
-  // Prepare chart data
+  // Handle summary data format
+  if (isSummaryData) {
+    const metrics = Object.keys(data);
+    const chartData = {
+      labels: metrics,
+      datasets: [{
+        label: 'Average Value',
+        data: metrics.map(metric => data[metric].avg),
+        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+        borderColor: 'rgba(59, 130, 246, 1)',
+        borderWidth: 2
+      }, {
+        label: 'Quality-Weighted Average',
+        data: metrics.map(metric => data[metric].weighted_avg),
+        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+        borderColor: 'rgba(34, 197, 94, 1)',
+        borderWidth: 2
+      }]
+    };
+
+    const chartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        tooltip: {
+          callbacks: {
+            afterLabel: function(context) {
+              const metric = context.label;
+              const metricData = data[metric];
+              return [
+                `Min: ${metricData.min} ${metricData.unit}`,
+                `Max: ${metricData.max} ${metricData.unit}`,
+                `Unit: ${metricData.unit}`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Value'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Metrics'
+          }
+        }
+      }
+    };
+
+    return (
+      <div className="bg-white p-4 rounded-lg shadow-md h-96">
+        <h2 className="text-xl font-semibold text-eco-primary mb-4">{title}</h2>
+        <div className="h-5/6">
+          <Bar data={chartData} options={chartOptions} />
+        </div>
+      </div>
+    );
+  }
+
+  // Handle regular climate data format
   const locations = [...new Set(data.map(item => item.location_name))];
   const dates = [...new Set(data.map(item => item.date))].sort();
   
